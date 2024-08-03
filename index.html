@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frame It</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+      }
+
+      #frameCanvas {
+        display: none;
+      }
+
+      #resultImage {
+        display: none;
+        margin: 40px 0;
+        width: 100%;
+        max-width: 1200px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <h1>Upload a photo to add a nice frame to it</h1>
+      <input type="file" id="fileInput" accept="image/*" />
+    </div>
+    <canvas id="frameCanvas"></canvas>
+    <img id="resultImage" alt="Framed Image" />
+
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const frameCanvas = document.getElementById("frameCanvas");
+      const ctx = frameCanvas.getContext("2d");
+      const resultImage = document.getElementById("resultImage");
+
+      fileInput.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+          const img = new Image();
+          img.onload = function () {
+            const frameSize = 120;
+            const cornerRadius = 20;
+
+            frameCanvas.width = img.width + frameSize;
+            frameCanvas.height = img.height + frameSize;
+
+            // Create gradient for the square frame
+            const gradient = ctx.createLinearGradient(
+              0,
+              0,
+              frameCanvas.width,
+              frameCanvas.height,
+            );
+            gradient.addColorStop(0, "#8d54e9");
+            gradient.addColorStop(1, "#4c73e6");
+
+            // Draw square gradient frame
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, frameCanvas.width, frameCanvas.height);
+
+            // Create a rounded rectangle path for the image
+            ctx.beginPath();
+            ctx.moveTo(frameSize / 2 + cornerRadius, frameSize / 2);
+            ctx.lineTo(
+              frameCanvas.width - frameSize / 2 - cornerRadius,
+              frameSize / 2,
+            );
+            ctx.quadraticCurveTo(
+              frameCanvas.width - frameSize / 2,
+              frameSize / 2,
+              frameCanvas.width - frameSize / 2,
+              frameSize / 2 + cornerRadius,
+            );
+            ctx.lineTo(
+              frameCanvas.width - frameSize / 2,
+              frameCanvas.height - frameSize / 2 - cornerRadius,
+            );
+            ctx.quadraticCurveTo(
+              frameCanvas.width - frameSize / 2,
+              frameCanvas.height - frameSize / 2,
+              frameCanvas.width - frameSize / 2 - cornerRadius,
+              frameCanvas.height - frameSize / 2,
+            );
+            ctx.lineTo(
+              frameSize / 2 + cornerRadius,
+              frameCanvas.height - frameSize / 2,
+            );
+            ctx.quadraticCurveTo(
+              frameSize / 2,
+              frameCanvas.height - frameSize / 2,
+              frameSize / 2,
+              frameCanvas.height - frameSize / 2 - cornerRadius,
+            );
+            ctx.lineTo(frameSize / 2, frameSize / 2 + cornerRadius);
+            ctx.quadraticCurveTo(
+              frameSize / 2,
+              frameSize / 2,
+              frameSize / 2 + cornerRadius,
+              frameSize / 2,
+            );
+            ctx.closePath();
+
+            // Clip to the rounded rectangle path
+            ctx.save();
+            ctx.clip();
+
+            // Draw the image
+            ctx.drawImage(
+              img,
+              frameSize / 2,
+              frameSize / 2,
+              img.width,
+              img.height,
+            );
+
+            // Restore the context
+            ctx.restore();
+
+            resultImage.src = frameCanvas.toDataURL();
+            resultImage.style.display = "inline-block"; // Show the image
+          };
+          img.src = event.target.result;
+        };
+
+        reader.readAsDataURL(file);
+      });
+    </script>
+  </body>
+</html>
