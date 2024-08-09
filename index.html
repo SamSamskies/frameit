@@ -10,15 +10,35 @@
         text-align: center;
       }
 
-      #frameCanvas {
+      #frameCanvas,
+      #uploadButton {
         display: none;
+      }
+
+      #uploadButton {
+        background-color: #7f00ff;
+        color: white;
+        border: 1px solid grey;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        margin: auto;
+      }
+
+      #uploadButton:hover {
+        background-color: indigo;
+      }
+
+      #uploadButton:disabled {
+        cursor: not-allowed;
+        background-color: #ccc;
       }
 
       #resultImage {
         display: none;
         margin: 40px 0;
         width: 100%;
-        max-width: 1200px;
+        max-width: 800px;
       }
     </style>
   </head>
@@ -29,14 +49,56 @@
     </div>
     <canvas id="frameCanvas"></canvas>
     <img id="resultImage" alt="Framed Image" />
+    <button id="uploadButton">Upload to nostr.build</button>
 
-    <script>
+    <script type="module">
+      import { uploadFile } from "https://cdn.jsdelivr.net/npm/nostr-build@0.2.1/+esm";
+      import Swal from "https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/+esm";
+
       const fileInput = document.getElementById("fileInput");
       const frameCanvas = document.getElementById("frameCanvas");
       const ctx = frameCanvas.getContext("2d");
       const resultImage = document.getElementById("resultImage");
+      const uploadButton = document.getElementById("uploadButton");
 
-      fileInput.addEventListener("change", function (e) {
+      uploadButton.addEventListener("click", () => {
+        frameCanvas.toBlob(async (blob) => {
+          const file = new File([blob], "makeitnice.png");
+          const sign = (event) => window.nostr.signEvent(event);
+
+          try {
+            uploadButton.disabled = true;
+
+            const { nip94_event: nip94Event } = await uploadFile({
+              file,
+              sign,
+            });
+            const nostrBuildImgSrc = nip94Event.tags.find(
+              (t) => t[0] === "url",
+            )?.[1];
+
+            if (nostrBuildImgSrc) {
+              resultImage.src = nostrBuildImgSrc;
+            }
+
+            Swal.fire({
+              title: "Success 🎉",
+              text: "You can now right-click the image to copy the nostr.build URL",
+              icon: "success",
+            });
+          } catch (err) {
+            Swal.fire({
+              title: "Error",
+              text: err.message || "Something went wrong :(",
+              icon: "error",
+            });
+          } finally {
+            uploadButton.disabled = false;
+          }
+        });
+      });
+
+      fileInput.addEventListener("change", (e) => {
         const file = e.target.files[0];
         const reader = new FileReader();
 
@@ -123,6 +185,10 @@
 
             resultImage.src = frameCanvas.toDataURL();
             resultImage.style.display = "inline-block"; // Show the image
+
+            if (window.nostr) {
+              uploadButton.style.display = "block";
+            }
           };
           img.src = event.target.result;
         };
