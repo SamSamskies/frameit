@@ -55,12 +55,20 @@
     <script type="module">
       import { uploadFile } from "https://cdn.jsdelivr.net/npm/nostr-build@0.2.1/+esm";
       import Swal from "https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/+esm";
+      import {
+        init as initNostrLogin,
+        logout as logoutNostrLogin,
+      } from "https://cdn.jsdelivr.net/npm/nostr-login@1.5.2/+esm";
 
       const fileInput = document.getElementById("fileInput");
       const frameCanvas = document.getElementById("frameCanvas");
       const ctx = frameCanvas.getContext("2d");
       const resultImage = document.getElementById("resultImage");
       const uploadButton = document.getElementById("uploadButton");
+
+      if (!window.nostr) {
+        initNostrLogin({ noBanner: true });
+      }
 
       uploadButton.addEventListener("click", () => {
         frameCanvas.toBlob(async (blob) => {
@@ -88,6 +96,17 @@
               icon: "success",
             });
           } catch (err) {
+            if (
+              [
+                "user rejected",
+                "prompt was closed",
+                "rejected by user",
+              ].includes(err.message.toLowerCase())
+            ) {
+              return;
+            }
+
+            logoutNostrLogin();
             Swal.fire({
               title: "Error",
               text: err.message || "Something went wrong :(",
@@ -186,10 +205,7 @@
 
             resultImage.src = frameCanvas.toDataURL();
             resultImage.style.display = "inline-block"; // Show the image
-
-            if (window.nostr) {
-              uploadButton.style.display = "block";
-            }
+            uploadButton.style.display = "block";
           };
           img.src = event.target.result;
         };
