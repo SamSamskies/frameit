@@ -67,7 +67,7 @@
       const uploadButton = document.getElementById("uploadButton");
 
       if (!window.nostr) {
-        initNostrLogin({ noBanner: false });
+        initNostrLogin({ noBanner: false, darkMode: false });
       }
 
       uploadButton.addEventListener("click", () => {
